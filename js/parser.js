@@ -29,6 +29,7 @@ export function schoon(tekst) {
     .replace(/\b(?:spie(?:\s*melding)?|melding(?:nummer)?)\s*:?\s*\d{5,}\b/gi, '')
     // Serienummers
     .replace(/serie(?:nummer|nr)\.?\s*:?\s*\S+/gi, '')
+    .replace(/\bserial(?:\s*(?:number|no|nr))?\.?\s*:?\s*\S+/gi, '')
     // E-mailadressen en telefoonnummers
     .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '')
     .replace(/(?:\+31|0031|\b0)[\s()-]*\d(?:[\s()-]*\d){8}/g, '')
@@ -169,7 +170,7 @@ export function vindTips(tekst) {
 export function soort(tekst) {
   const t = normaliseer(tekst);
   if (/^\s*Werkbon\b/im.test(t) && /Oorzaak en oplo/i.test(t)) return 'werkbon';
-  if (/Locatiecode\s*:/i.test(t) || /Incident omschrijving/i.test(t)) return 'melding';
+  if (/Locatie\s*code\s*:/i.test(t) || /Incident omschrijving/i.test(t)) return 'melding';
   return 'onbekend';
 }
 
@@ -211,16 +212,19 @@ export async function parseWerkbon(ruw) {
 /** NOC-storingsmail -> melding (alleen tonen, niets van de nummers bewaren). */
 export async function parseMelding(ruw) {
   const t = normaliseer(ruw);
-  const code = veld(t, 'Locatiecode').match(/\d{3,6}/);
+  const code = veld(t, 'Locatie\\s*code').match(/\d{1,6}/);
   const prio = (veld(t, 'Prioriteit').match(/\d/) || [])[0];
   const omschrijvingRuw = veld(t, 'Incident omschrijving') || veld(t, 'omschrijving');
   const samenvatting = veld(t, 'Samenvatting') || veld(t, '#omschrijving');
-  const typeMerk = veld(t, 'Type\\s*/\\s*Merk(?: apparaat)?');
+  const typeVeld = veld(t, 'Type\\s*/\\s*Merk(?: apparaat)?') || veld(t, 'Type(?![_a-z])');
+  const typeMerk = /^incident\b/i.test(typeVeld) ? '' : typeVeld;
+  const site = veld(t, 'Site');
+  const gpsM = t.match(/GPS\s*:\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/i);
   const hostname = veld(t, 'Hostname') || veld(t, 'Naam');
   // SLA: laatste "SLA Target" in de mail
   const slaAlle = [...t.matchAll(/SLA Target:\s*\[?([\d\-: ]+)\]?/gi)];
   const sla = slaAlle.length ? datumTijd(slaAlle[slaAlle.length - 1][1]) : null;
-  const naamVoorstel = schoon(samenvatting || '')
+  const naamVoorstel = site ? netteNaam(site) : schoon(samenvatting || '')
     .replace(/\(\s*\[IP\]\s*\)/g, '')
     .replace(/\s*\bdown\b\s*$/i, '')
     .replace(/\s{2,}/g, ' ')
@@ -231,11 +235,12 @@ export async function parseMelding(ruw) {
     soort: 'melding',
     locatiecode: code ? code[0] : null,
     naamVoorstel: naamVoorstel || hostname || '',
-    adres: veld(t, 'Adres'),
+    adres: veld(t, 'Adres') || veld(t, 'Locatie\\s*adres'),
     prioriteit: prio ? 'P' + prio : '',
     omschrijving: schoon(omschrijvingRuw),
     apparaattype: typeMerk && !/\d{1,3}(\.\d{1,3}){3}/.test(typeMerk) ? typeMerk : '',
-    hostnames: [...new Set([hostname, ...vindHostnames(alles)].filter((h) => h && /-/.test(h)))],
+    hostnames: [...new Set([hostname, ...vindHostnames(alles)].filter((h) => h && /-/.test(h) && !(typeMerk && typeMerk.toUpperCase().includes(h.toUpperCase()))))],
+    gps: gpsM ? { lat: +gpsM[1], lng: +gpsM[2] } : null,
     trefwoorden: vindTrefwoorden(omschrijvingRuw + ' ' + samenvatting),
     sla: sla ? sla.toISOString() : null,
   };

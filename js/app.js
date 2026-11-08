@@ -1048,6 +1048,7 @@ app.addEventListener('click', async (e) => {
         adres: m.adres,
         apparaattypes: uniek([m.apparaattype]),
         hostnames: m.hostnames,
+        ...(m.gps ? { lat: m.gps.lat, lng: m.gps.lng } : {}),
       };
       location.hash = '#/nieuw';
       break;

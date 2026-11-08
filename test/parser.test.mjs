@@ -130,3 +130,42 @@ test('schoon() filtert telefoon en e-mail', () => {
   assert.ok(!/\d{7}/.test(s));
   assert.ok(!s.includes('@'));
 });
+
+// Tweede mailformaat: "Locatie code" met spatie, Site/Locatie adres/Type/GPS. VERZONNEN data.
+const MELDING_V2 = `Support Call Number 900123 - Support Reply: INC0000099 - Monitoring Alert: x12-34-100r-swt1-001 - Unavailable by ICMP ping
+Lemmens, Ilja
+Summary: INC0000099 - Monitoring Alert: x12-34-100r-swt1-001 - Unavailable by ICMP ping
+#Prioriteit : Priority 3;
+#Probleemtekst : 01-01-2026 10:00 Jansen, Piet:
+Graag zouden wij een first check willen op de onderstaande node.
+Locatie informatie:
+Site: RWS VICNET TESTCVR01 DE PROEFPOLDER
+Locatie adres: Proefweg 1 1234 AB TESTDORP
+Locatie code: 77
+Node Informatie:
+Hostname: x12-34-100r-swt1-001
+Type: Cisco IE-3400-8T2S-E (3U)
+Serial: FCW0000TEST
+IP: 10.0.0.42
+GPS: 52.100000, 5.100000
+#omschrijving : INC0000099 - Monitoring Alert: x12-34-100r-swt1-001 - Unavailable by ICMP ping;
+#type: Incident
+SLA Target: [05-01-2026 12:00:00]`;
+
+test('melding v2: Locatie code met spatie wordt herkend', async () => {
+  assert.equal(soort(MELDING_V2), 'melding');
+  const m = await parseMelding(MELDING_V2);
+  assert.equal(m.locatiecode, '77');
+  assert.equal(m.naamVoorstel, 'TESTCVR01 De Proefpolder');
+  assert.equal(m.adres, 'Proefweg 1 1234 AB TESTDORP');
+  assert.equal(m.prioriteit, 'P3');
+  assert.equal(m.apparaattype, 'Cisco IE-3400-8T2S-E (3U)');
+  assert.deepEqual(m.hostnames, ['x12-34-100r-swt1-001']);
+  assert.deepEqual(m.gps, { lat: 52.1, lng: 5.1 });
+  assert.ok(m.sla);
+  const alles = JSON.stringify(m);
+  assert.ok(!alles.includes('10.0.0.42'), 'geen IP');
+  assert.ok(!alles.includes('FCW0000TEST'), 'geen serienummer');
+  assert.ok(!alles.includes('INC0000099'), 'geen ticketnummer');
+  assert.ok(!alles.includes('Jansen'), 'geen namen');
+});
