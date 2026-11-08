@@ -24,6 +24,7 @@ const staat = {
   objecten: [],
   storingen: [],
   fotos: [],
+  beheerder: false,
   pos: null,
   zoek: '',
   wachtwoordZetten: wachtwoordLink,
@@ -158,6 +159,9 @@ async function laadAlles() {
     const { error } = await sb.from('profiles').insert({ id: staat.gebruiker.id, naam });
     if (!error) staat.profielen.set(staat.gebruiker.id, naam);
   }
+  // Beheerder? (kolom bestaat pas na 02_beheerder.sql; anders gewoon geen beheerder)
+  const b = await sb.from('profiles').select('beheerder').eq('id', staat.gebruiker.id).maybeSingle();
+  staat.beheerder = !b.error && !!b.data?.beheerder;
   staat.geladen = true;
   geocodeOntbrekende();
 }
@@ -615,6 +619,7 @@ function renderBewerk({ id }) {
         <div class="veld"><label for="f-kleur">Kleur post-it</label><select id="f-kleur">${KLEUREN.map((k) => `<option value="${k}" ${o.kleur === k ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
         <button class="knop groot" type="submit">Opslaan</button>
       </form>
+      ${bestaand && staat.beheerder ? `<button class="knop gevaar wit" type="button" data-actie="object-weg" data-id="${esc(id)}">Object verwijderen</button>` : ''}
     </main>${nav('')}</div>`;
 
   let coords = o.lat != null ? { lat: o.lat, lng: o.lng } : null;
@@ -1023,6 +1028,22 @@ app.addEventListener('click', async (e) => {
     case 'herlaad': location.reload(); break;
     case 'vergeten': wachtwoordVergeten(); break;
     case 'uitloggen': await sb.auth.signOut(); break;
+    case 'object-weg': {
+      const o = object(el.dataset.id);
+      if (!o) break;
+      const nS = storingenVan(o.id).length;
+      const fotos = staat.fotos.filter((f) => f.object_id === o.id);
+      if (!confirm(`"${o.naam}" verwijderen?\n\nDit haalt ook ${nS} storing(en) en ${fotos.length} foto('s) weg, ook die van collega's. Dit kan niet ongedaan worden.`)) break;
+      if (fotos.length) await sb.storage.from('fotos').remove(fotos.map((f) => f.pad));
+      const { error } = await sb.from('objecten').delete().eq('id', o.id);
+      if (error) { toast('Verwijderen mislukt: ' + error.message, 5000); break; }
+      staat.objecten = staat.objecten.filter((x) => x.id !== o.id);
+      staat.storingen = staat.storingen.filter((x) => x.object_id !== o.id);
+      staat.fotos = staat.fotos.filter((x) => x.object_id !== o.id);
+      toast('Object verwijderd');
+      location.hash = '#/';
+      break;
+    }
     case 'nieuw-ww': staat.wachtwoordZetten = true; render(); break;
     case 'storing-form': $('#storing-form').hidden = false; $('#s-oms').focus(); break;
     case 'storing-annuleer': $('#storing-form').hidden = true; break;

@@ -20,6 +20,7 @@ wordt alleen een hash bewaard (om dubbele import te voorkomen).
 - Frontend: statische PWA (HTML/JS), gehost op GitHub Pages
 - Backend: Supabase (database, login, foto-opslag), alleen toegankelijk voor uitgenodigde gebruikers
 - Database-opzet: `supabase/01_schema.sql` (opnieuw draaien is veilig)
+- Beheerder (objecten verwijderen): `supabase/02_beheerder.sql`
 
 ## Testen
 ```

@@ -1,6 +1,6 @@
 // Service worker: app-bestanden offline beschikbaar, altijd eerst de nieuwste versie proberen.
 // Gegevens (Supabase) worden NIET gecachet.
-const CACHE = 'kennisbank-v3';
+const CACHE = 'kennisbank-v4';
 const BESTANDEN = [
   './',
   'index.html',
