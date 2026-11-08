@@ -21,6 +21,7 @@ export function schoon(tekst) {
   return String(tekst)
     // IPv4-adressen, eventueel met subnet
     .replace(/\b\d{1,3}(?:\.\d{1,3}){3}(?:\/\d{1,2})?\b/g, '[IP]')
+    .replace(/\s*\(\s*\[IP\]\s*\)/g, '')
     // Ticket- en meldingnummers
     .replace(/\b(?:INC|ITASK|RITM|CHG|TASK)\d{5,}\b/gi, '')
     .replace(/\bM\d{8,}(?:\\\d+)?/g, '')
