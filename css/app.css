@@ -199,3 +199,5 @@ textarea { resize: vertical; line-height: 1.45; }
   a.postit { transition: transform 0.15s ease; }
   a.postit:hover { transform: rotate(0deg) scale(1.02); }
 }
+
+.copyright { margin: 8px 0 0; font-size: 12px; color: rgba(255,255,255,.75); text-align: center; }

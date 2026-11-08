@@ -264,6 +264,7 @@ function renderLogin(melding = '') {
       <button class="linkknop" type="button" data-actie="vergeten">Wachtwoord vergeten?</button>
     </form>
     <p class="info-kurk">${ICON.slot}Alleen voor uitgenodigde collega's van de storingsdienst.</p>
+    <p class="copyright">© ${new Date().getFullYear()} Ilja Lemmens</p>
   </main>`;
   $('#login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -323,6 +324,7 @@ function renderAccount() {
       </form>
       <button class="knop rand wit" data-actie="nieuw-ww">Wachtwoord wijzigen</button>
       <button class="knop gevaar wit" data-actie="uitloggen">Uitloggen</button>
+      <p class="copyright">Copyright © ${new Date().getFullYear()} Ilja Lemmens · alle rechten voorbehouden</p>
     </main>${nav('')}</div>`;
   $('#acc-form').addEventListener('submit', async (e) => {
     e.preventDefault();
